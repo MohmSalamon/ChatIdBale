@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>درخواست نوبت کلینیک</title>
+  <style>
+    body { font-family: Tahoma, sans-serif; background: #f0f4f8; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
+    .container { background: #fff; border-radius: 16px; padding: 30px; max-width: 450px; width: 100%; box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
+    h1 { text-align: center; color: #1a73e8; margin-bottom: 24px; }
+    .form-group { margin-bottom: 16px; }
+    label { display: block; font-weight: bold; margin-bottom: 5px; color: #333; }
+    input, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
+    button { width: 100%; padding: 12px; background: #1a73e8; color: #fff; border: none; border-radius: 8px; font-size: 18px; cursor: pointer; transition: background 0.3s; }
+    button:hover { background: #1557b0; }
+    .message { margin-top: 16px; padding: 12px; border-radius: 8px; display: none; }
+    .success { background: #e6f4ea; color: #1e7e34; display: block; }
+    .error { background: #fce8e6; color: #d93025; display: block; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🏥 درخواست نوبت</h1>
+    <form id="appointmentForm">
+      <div class="form-group">
+        <label>نام و نام خانوادگی</label>
+        <input type="text" id="name" placeholder="مثال: علی محمدی" required>
+      </div>
+      <div class="form-group">
+        <label>شماره تلفن</label>
+        <input type="tel" id="phone" placeholder="۰۹۱۲۳۴۵۶۷۸۹" required>
+      </div>
+      <div class="form-group">
+        <label>تاریخ مورد نظر</label>
+        <input type="date" id="date" required>
+      </div>
+      <div class="form-group">
+        <label>ساعت</label>
+        <input type="time" id="time" required>
+      </div>
+      <div class="form-group">
+        <label>توضیحات (اختیاری)</label>
+        <textarea id="note" rows="3" placeholder="توضیحات اضافی..."></textarea>
+      </div>
+      <button type="submit">ثبت درخواست</button>
+    </form>
+    <div id="message" class="message"></div>
+  </div>
+
+  <script>
+    document.getElementById('appointmentForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const messageDiv = document.getElementById('message');
+      messageDiv.className = 'message';
+      messageDiv.style.display = 'none';
+
+      const name = document.getElementById('name').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+      const date = document.getElementById('date').value;
+      const time = document.getElementById('time').value;
+      const note = document.getElementById('note').value.trim();
+
+      if (!name || !phone || !date || !time) {
+        messageDiv.textContent = '❌ لطفاً تمام فیلدهای ضروری را پر کنید.';
+        messageDiv.className = 'message error';
+        messageDiv.style.display = 'block';
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/request', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, phone, date, time, note })
+        });
+        const data = await response.json();
+        if (response.ok) {
+          messageDiv.textContent = '✅ ' + data.message;
+          messageDiv.className = 'message success';
+          document.getElementById('appointmentForm').reset();
+        } else {
+          messageDiv.textContent = '❌ خطا: ' + (data.error || 'مشکلی پیش آمد');
+          messageDiv.className = 'message error';
+        }
+      } catch (error) {
+        messageDiv.textContent = '❌ خطا در ارتباط با سرور.';
+        messageDiv.className = 'message error';
+      }
+      messageDiv.style.display = 'block';
+    });
+  </script>
+</body>
+</html>
