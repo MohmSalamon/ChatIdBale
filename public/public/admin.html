@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>پنل منشی - مدیریت نوبت‌ها</title>
+  <style>
+    body { font-family: Tahoma, sans-serif; background: #f0f4f8; padding: 20px; }
+    .container { max-width: 1000px; margin: auto; }
+    h1 { color: #1a73e8; text-align: center; }
+    .request-card { background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border-right: 6px solid #fbbc04; transition: 0.2s; }
+    .request-card.confirmed { border-right-color: #34a853; background: #f1f9f4; }
+    .request-card.rejected { border-right-color: #ea4335; background: #fce8e6; }
+    .request-card .info { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 8px 0; }
+    .request-card .info span { background: #e8edf2; padding: 4px 12px; border-radius: 20px; font-size: 14px; }
+    .status-pending { color: #f9ab00; }
+    .status-confirmed { color: #34a853; }
+    .status-rejected { color: #ea4335; }
+    .btn { padding: 8px 20px; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; margin-left: 8px; }
+    .btn-confirm { background: #34a853; color: #fff; }
+    .btn-confirm:hover { background: #2d9249; }
+    .btn-reject { background: #ea4335; color: #fff; }
+    .btn-reject:hover { background: #d33426; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .refresh-btn { background: #1a73e8; color: #fff; padding: 10px 24px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; margin-bottom: 20px; }
+    .refresh-btn:hover { background: #1557b0; }
+    .empty { text-align: center; color: #888; font-size: 18px; margin-top: 40px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📋 پنل مدیریت نوبت‌ها</h1>
+    <button class="refresh-btn" onclick="loadRequests()">🔄 بارگذاری مجدد</button>
+    <div id="requestsList"></div>
+  </div>
+
+  <script>
+    async function loadRequests() {
+      const list = document.getElementById('requestsList');
+      list.innerHTML = 'در حال بارگذاری...';
+      try {
+        const response = await fetch('/api/requests');
+        const requests = await response.json();
+        if (requests.length === 0) {
+          list.innerHTML = '<div class="empty">هیچ درخواستی وجود ندارد.</div>';
+          return;
+        }
+        requests.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        list.innerHTML = '';
+        requests.forEach(req => {
+          const card = document.createElement('div');
+          card.className = `request-card ${req.status}`;
+          const statusText = {
+            pending: 'در انتظار بررسی',
+            confirmed: 'تأیید شده',
+            rejected: 'رد شده'
+          }[req.status] || req.status;
+
+          card.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
+              <h3 style="margin:0;">#${req.id} - ${req.name}</h3>
+              <span class="status status-${req.status}">${statusText}</span>
+            </div>
+            <div class="info">
+              <span>📞 ${req.phone}</span>
+              <span>📅 ${req.date}</span>
+              <span>⏰ ${req.time}</span>
+              ${req.note ? `<span>📝 ${req.note}</span>` : ''}
+              <span>🕒 ${new Date(req.created_at).toLocaleString('fa-IR')}</span>
+            </div>
+            <div style="margin-top:12px;">
+              ${req.status === 'pending' ? `
+                <button class="btn btn-confirm" onclick="confirmRequest(${req.id})">✅ تأیید</button>
+                <button class="btn btn-reject" onclick="rejectRequest(${req.id})">❌ رد</button>
+              ` : `
+                <span style="color:#666;">این درخواست قبلاً بررسی شده است.</span>
+              `}
+            </div>
+          `;
+          list.appendChild(card);
+        });
+      } catch (error) {
+        list.innerHTML = `<div class="empty">❌ خطا در بارگذاری درخواست‌ها.</div>`;
+        console.error(error);
+      }
+    }
+
+    async function confirmRequest(id) {
+      if (!confirm(`آیا از تأیید درخواست شماره ${id} اطمینان دارید؟`)) return;
+      try {
+        const response = await fetch('/api/confirm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ requestId: id })
+        });
+        const data = await response.json();
+        if (response.ok) {
+          alert('✅ ' + data.message);
+          loadRequests();
+        } else {
+          alert('❌ خطا: ' + (data.error || 'مشکلی پیش آمد'));
+        }
+      } catch (error) {
+        alert('❌ خطا در ارتباط با سرور.');
+      }
+    }
+
+    async function rejectRequest(id) {
+      alert('⚠️ امکان رد در این نسخه از طریق پنل پیاده‌سازی نشده است. از ربات استفاده کنید.');
+    }
+
+    loadRequests();
+    setInterval(loadRequests, 30000);
+  </script>
+</body>
+</html>
