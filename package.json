@@ -1,1 +1,15 @@
-
+{
+  "name": "telegram-clinic-bot-supabase",
+  "version": "1.0.0",
+  "description": "درخواست نوبت کلینیک با ربات تلگرام و Supabase",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.38.4",
+    "axios": "^1.6.0",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2"
+  }
+}
